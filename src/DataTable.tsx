@@ -18,8 +18,8 @@ export default function DataTable({
             <tr key={week} style={{ height: 10 }}>{dateArray.map((date, j) => {
               const dateString = format(date, 'yyyy-MM-dd') + ' 没有数据'
               return (
-                <Tooltip title={dateString}>
-                  <td key={j} className='cell ContributionCalendar-day' data-level="2" data-value={dateString} />
+                <Tooltip title={dateString} key={j}>
+                  <td className='cell ContributionCalendar-day' data-level="2" data-value={dateString} />
                 </Tooltip>
               )
             })}</tr>
