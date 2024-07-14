@@ -8,7 +8,7 @@ import {
   isSaturday,
   isSunday
 } from 'date-fns'
-import { type Week } from "./constant"
+import { type IDatum, type Week } from "./constant"
 
 export function getDateArrayByRange(start: Date, end: Date): Date[] {
   const dateArray = Array.from({ length: differenceInCalendarDays(end, start) + 1}, (_, i) => {
@@ -40,8 +40,8 @@ export function getDateArrayByYear(year: number): Date[] {
   return dateArray
 }
 
-export function getDateMap(dateArray: Date[]) {
-  const map: Record<Week, Date[]> ={
+export function getDateMap(items: IDatum[]) {
+  const map: Record<Week, IDatum[]> ={
     'Mon': [],
     'Tue': [],
     'Wed': [],
@@ -50,21 +50,22 @@ export function getDateMap(dateArray: Date[]) {
     'Sat': [],
     'Sun': [],
   }
-  dateArray.forEach(date => {
+  items.forEach(item => {
+    const date = item.dt
     if (isMonday(date)) {
-      map.Mon.push(date)
+      map.Mon.push(item)
     } else if (isTuesday(date)) {
-      map.Tue.push(date)
+      map.Tue.push(item)
     } else if (isWednesday(date)) {
-      map.Wed.push(date)
+      map.Wed.push(item)
     } else if (isThursday(date)) {
-      map.Thu.push(date)
+      map.Thu.push(item)
     } else if (isFriday(date)) {
-      map.Fri.push(date)
+      map.Fri.push(item)
     } else if (isSaturday(date)) {
-      map.Sat.push(date)
+      map.Sat.push(item)
     } else if (isSunday(date)) {
-      map.Sun.push(date)
+      map.Sun.push(item)
     }
   })
 

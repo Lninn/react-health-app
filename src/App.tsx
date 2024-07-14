@@ -3,18 +3,14 @@ import { useEffect, useState } from 'react'
 // import viteLogo from '/vite.svg'
 import './App.css'
 
-import { getDateArrayByRange, getDateMap } from './common'
-import { type Week } from './constant'
+import { getDateMap } from './common'
+import { type IDatum, type Week } from './constant'
 import DataTable from './DataTable'
 import { Button, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
 import { XMLParser } from 'fast-xml-parser'
 
-interface IDatum {
-  dt: string
-  value: number
-  level: string | number | null
-}
+
 
 function categorizeDataByLevels(data: IDatum[]) {
   // 验证输入是否为数组
@@ -49,7 +45,7 @@ function categorizeDataByLevels(data: IDatum[]) {
 }
 
 function App() {
-  const [dateMap, setDateMap] = useState<Record<Week, Date[]>>()
+  const [dateMap, setDateMap] = useState<Record<Week, IDatum[]>>()
 
   const [resultMap, setResultMap] = useState<Record<string, number>>()
 
@@ -58,6 +54,7 @@ function App() {
 
     if (!resultMap) return
 
+    console.log("数据转换中...")
     const unHandData: IDatum[] = []
     for (const [key, value] of Object.entries(resultMap)) {
       unHandData.push({
@@ -68,14 +65,10 @@ function App() {
     }
 
     const finalData = categorizeDataByLevels(unHandData)
-    console.log(finalData)
 
-    const now = new Date()
-    const before1Year = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate() + 2)
-    const dateOfLast6Month = getDateArrayByRange(before1Year, now)
+    const map = getDateMap(finalData)
 
-    const map = getDateMap(dateOfLast6Month)
-
+    console.log("数据渲染...")
     setDateMap(
       map
     )
@@ -118,8 +111,10 @@ function App() {
 
       }
 
+      console.log('数据解析完成...')
       setResultMap(result)
     };
+    console.log('开始解析数据...')
     reader.readAsText(file as never as Blob)
 
   }

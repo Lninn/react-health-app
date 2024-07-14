@@ -1,12 +1,12 @@
 import { Tooltip } from "antd"
 import { format } from "date-fns"
-import { type Week, weeks } from "./constant"
+import { type IDatum, type Week, weeks } from "./constant"
 
 
 export default function DataTable({
   map,
 }: {
-  map: Record<Week, Date[]>
+  map: Record<Week, IDatum[]>
 }) {
   return (
     <table className='table'>
@@ -15,11 +15,11 @@ export default function DataTable({
           const dateArray = map[week]
 
           return (
-            <tr key={week} style={{ height: 10 }}>{dateArray.map((date, j) => {
-              const dateString = format(date, 'yyyy-MM-dd') + ' 没有数据'
+            <tr key={week} style={{ height: 10 }}>{dateArray.map((item, j) => {
+              const dateString = format(item.dt, 'yyyy-MM-dd')
               return (
                 <Tooltip title={dateString} key={j}>
-                  <td className='cell ContributionCalendar-day' data-level="2" data-value={dateString} />
+                  <td className='cell ContributionCalendar-day' data-level={item.level} data-value={dateString} />
                 </Tooltip>
               )
             })}</tr>
