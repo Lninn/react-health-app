@@ -1,12 +1,12 @@
 import './App.css'
 
-import { CSSProperties, useEffect, useState } from 'react'
+import { CSSProperties, useEffect, useRef, useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 
 import { Button, Divider, message, Progress, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { DeleteOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import type { IMonthItem, IDatum } from './constant'
 import DataTable from './DataTable'
 import {
@@ -16,6 +16,8 @@ import {
   getStepData,
   patchDataList
 } from './common'
+import * as htmlToImage from 'html-to-image';
+import downloadjs from 'downloadjs'
 
 
 const KEY = 'stepData'
@@ -25,6 +27,8 @@ function App() {
   const [datumList, setDatumList] = useState<IDatum[]>([])
   const [months, setMonths] = useState<IMonthItem[]>([])
   const [size, setSize] = useState(12)
+
+  const dataNodeRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     console.log('App mounted ')
@@ -102,6 +106,16 @@ function App() {
     message.info('数据已清空')
   }
 
+  function saveAsImage() {
+    const node = dataNodeRef.current
+    if (!node) return
+
+    htmlToImage.toPng(node)
+    .then(function (dataUrl) {
+      downloadjs(dataUrl, 'my-node.png');
+    });
+  }
+
   return (
     <div style={rootStyle}>
       <div style={{ width: 450 }}>
@@ -117,6 +131,7 @@ function App() {
           <Upload beforeUpload={() => false} onChange={handleFileChange}>
             <Button icon={<UploadOutlined />}>上传文件并解析</Button>
           </Upload>
+          <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
         </Space>
 
         <LabelItem label='文件解析  进度'>
@@ -137,20 +152,22 @@ function App() {
         </LabelItem>
       </div>
       <Divider />
-      <div style={{ display: 'grid', placeItems: 'center' }}>
-        {
-          datumList.length ? (
-            <DataTable months={months} data={datumList} />
-          ) : <Skeleton />
-        }
-      </div>
+      <div className="table-wrapper" ref={dataNodeRef}>
+        <div style={{ display: 'grid', placeItems: 'center' }}>
+          {
+            datumList.length ? (
+              <DataTable months={months} data={datumList} />
+            ) : <Skeleton />
+          }
+        </div>
 
-      <div className='indicator'>
-        <div className='cell ContributionCalendar-day' />
-        <div className='cell ContributionCalendar-day' data-level="1" />
-        <div className='cell ContributionCalendar-day' data-level="2" />
-        <div className='cell ContributionCalendar-day' data-level="3" />
-        <div className='cell ContributionCalendar-day' data-level="4" />
+        <div className='indicator'>
+          <div className='cell ContributionCalendar-day' />
+          <div className='cell ContributionCalendar-day' data-level="1" />
+          <div className='cell ContributionCalendar-day' data-level="2" />
+          <div className='cell ContributionCalendar-day' data-level="3" />
+          <div className='cell ContributionCalendar-day' data-level="4" />
+        </div>
       </div>
 
       <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
