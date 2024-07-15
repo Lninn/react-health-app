@@ -18,12 +18,34 @@ export default function DataTable({
 
   return (
     <table className='table'>
+      <thead>
+        <tr>
+          <th style={{ width: 28 }}></th>
+          {weeks.map(week => {
+            return (
+              <td key={week} className='ContributionCalendar-label' colSpan={4}>
+                {week}
+              </td>
+            )
+          })}
+        </tr>
+      </thead>
       <tbody>
-        {map && weeks.map(week => {
+        {map && weeks.map((week, k) => {
           const dateArray = map[week]
 
           return (
             <tr key={week} className='row'>
+              <td className='ContributionCalendar-label'>
+                <span className="sr-only">Tuesday</span>
+                <span style={{
+                  position: 'absolute',
+                  bottom: -3,
+                  clipPath: k % 2 !== 0 ? 'none' : 'Circle(0)'
+                }}>
+                  {weeks[k]}
+                </span>
+              </td>
               {
                 dateArray.map((item, j) => {
                   const title = format(item.dt, 'yyyy-MM-dd') + ` - ${item.value}`
@@ -31,7 +53,7 @@ export default function DataTable({
                     <Tooltip title={title} key={j}>
                       <td
                         className='cell ContributionCalendar-day'
-                        data-level={item.level}
+                        data-level={item.level ? +item.level - 1 : null}
                       />
                     </Tooltip>
                   )

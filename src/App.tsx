@@ -4,12 +4,12 @@ import { CSSProperties, useEffect, useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 
-import { Button, Divider, message, Progress, Slider, Space, Upload } from 'antd'
+import { Button, Divider, message, Progress, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
 import { categorizeDataByLevels, getOriginalRecords, getStepData } from './common'
 import { type IDatum } from './constant'
 import DataTable from './DataTable'
-import { DeleteOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 
 
 const KEY = 'stepData'
@@ -17,7 +17,7 @@ const KEY = 'stepData'
 function App() {
   const [percent, setPercent] = useState(0)
   const [datumList, setDatumList] = useState<IDatum[]>([])
-  const [size, setSize] = useState(10)
+  const [size, setSize] = useState(12)
 
   useEffect(() => {
     console.log('App mounted ')
@@ -58,7 +58,14 @@ function App() {
 
       const unSetData = getStepData(originalResult)
       const list = categorizeDataByLevels(unSetData)
-      setDatumList(list);
+
+      const sliceList = list.sort((prev, next) => {
+        const prevDate = new Date(prev.dt)
+        const nextDate = new Date(next.dt)
+        return prevDate.getTime() - nextDate.getTime()
+      })
+
+      setDatumList(sliceList);
 
       message.info('数据解析完成')
     }
@@ -93,18 +100,24 @@ function App() {
   return (
     <div style={rootStyle}>
       <div style={{ width: 450 }}>
-        <Space>
+        <Space style={{ marginBlockEnd: 16 }}>
+          <Button
+            icon={<GithubOutlined />}
+            onClick={() => {
+              window.open('https://github.com/Lninn/vite-react-project')
+            }}
+          />
           <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
           <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
-        </Space>
-        <div>
           <Upload beforeUpload={() => false} onChange={handleFileChange}>
             <Button icon={<UploadOutlined />}>上传文件并解析</Button>
           </Upload>
-          <LabelItem label='文件进度'>
-            <Progress percent={percent} type="line" />
-          </LabelItem>
-        </div>
+        </Space>
+
+        <LabelItem label='文件解析  进度'>
+          <Progress percent={percent} type="line" />
+        </LabelItem>
+
         <LabelItem label="调整单元格大小">
           <Slider
             min={5}
@@ -119,7 +132,21 @@ function App() {
         </LabelItem>
       </div>
       <Divider />
-      <DataTable data={datumList} />
+      <div style={{ display: 'grid', placeItems: 'center' }}>
+        {
+          datumList.length ? (
+            <DataTable data={datumList} />
+          ) : <Skeleton />
+        }
+      </div>
+
+      <div className='indicator'>
+        <div className='cell ContributionCalendar-day' />
+        <div className='cell ContributionCalendar-day' data-level="1" />
+        <div className='cell ContributionCalendar-day' data-level="2" />
+        <div className='cell ContributionCalendar-day' data-level="3" />
+        <div className='cell ContributionCalendar-day' data-level="4" />
+      </div>
     </div>
   )
 }

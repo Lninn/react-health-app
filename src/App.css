@@ -20,3 +20,16 @@
 .label-item .name {
   color: #999;
 }
+
+.indicator {
+  height: var(--cell-size);
+
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+
+  margin-block-start: 16px;
+}
+.indicator .cell {
+  height: var(--cell-size);
+}
