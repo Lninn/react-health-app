@@ -6,3 +6,9 @@ export interface IDatum {
   value: number
   level: string | number | null
 }
+
+export interface IMonthItem {
+  label: string
+  span: number
+  logs: number[]
+}

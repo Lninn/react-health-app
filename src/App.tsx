@@ -6,10 +6,16 @@ import { CSSProperties, useEffect, useState } from 'react'
 
 import { Button, Divider, message, Progress, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { categorizeDataByLevels, getOriginalRecords, getStepData } from './common'
-import { type IDatum } from './constant'
-import DataTable from './DataTable'
 import { DeleteOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import type { IMonthItem, IDatum } from './constant'
+import DataTable from './DataTable'
+import {
+  categorizeDataByLevels,
+  getMonthList,
+  getOriginalRecords,
+  getStepData,
+  patchDataList
+} from './common'
 
 
 const KEY = 'stepData'
@@ -17,6 +23,7 @@ const KEY = 'stepData'
 function App() {
   const [percent, setPercent] = useState(0)
   const [datumList, setDatumList] = useState<IDatum[]>([])
+  const [months, setMonths] = useState<IMonthItem[]>([])
   const [size, setSize] = useState(12)
 
   useEffect(() => {
@@ -26,10 +33,11 @@ function App() {
       const res = localStorage.getItem(KEY)
       const data = JSON.parse(res ?? '')
       if (data) {
+        setMonths(getMonthList(data))
         setDatumList(data)
       }
     } catch (error) {
-      console.log('error on localStorage ')
+      console.log('error on localStorage ', error)
     }
 
     return () => {
@@ -59,13 +67,10 @@ function App() {
       const unSetData = getStepData(originalResult)
       const list = categorizeDataByLevels(unSetData)
 
-      const sliceList = list.sort((prev, next) => {
-        const prevDate = new Date(prev.dt)
-        const nextDate = new Date(next.dt)
-        return prevDate.getTime() - nextDate.getTime()
-      })
+     const finalList = patchDataList(list)
 
-      setDatumList(sliceList);
+      setDatumList(finalList);
+      setMonths(getMonthList(finalList))
 
       message.info('数据解析完成')
     }
@@ -135,7 +140,7 @@ function App() {
       <div style={{ display: 'grid', placeItems: 'center' }}>
         {
           datumList.length ? (
-            <DataTable data={datumList} />
+            <DataTable months={months} data={datumList} />
           ) : <Skeleton />
         }
       </div>
@@ -146,6 +151,10 @@ function App() {
         <div className='cell ContributionCalendar-day' data-level="2" />
         <div className='cell ContributionCalendar-day' data-level="3" />
         <div className='cell ContributionCalendar-day' data-level="4" />
+      </div>
+
+      <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
+        数据来自 Apple 健康 App
       </div>
     </div>
   )

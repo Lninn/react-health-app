@@ -2,15 +2,17 @@ import './DataTable.css'
 
 import { Tooltip } from "antd"
 import { format } from "date-fns"
-import { type IDatum, weeks } from "./constant"
+import { type IDatum, type IMonthItem, weeks } from "./constant"
 import { useMemo } from "react"
 import { getDateMap } from "./common"
 
 
 export default function DataTable({
   data,
+  months,
 }: {
   data: IDatum[]
+  months: IMonthItem[]
 }) {
   const map = useMemo(() => {
     return getDateMap(data)
@@ -21,10 +23,11 @@ export default function DataTable({
       <thead>
         <tr>
           <th style={{ width: 28 }}></th>
-          {weeks.map(week => {
+          {months.map(item => {
+            const monthName = new Date(item.label).toLocaleString('zh', { month: 'short' })
             return (
-              <td key={week} className='ContributionCalendar-label' colSpan={4}>
-                {week}
+              <td key={item.label} className='ContributionCalendar-label' colSpan={item.span}>
+                {monthName}
               </td>
             )
           })}
@@ -54,7 +57,7 @@ export default function DataTable({
                       <td
                         className='cell ContributionCalendar-day'
                         data-level={item.level ? +item.level - 1 : null}
-                      />
+                      ></td>
                     </Tooltip>
                   )
                 })
