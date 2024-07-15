@@ -9,6 +9,8 @@ import {
   isSunday
 } from 'date-fns'
 import { type IDatum, type Week } from "./constant"
+import { XMLParser } from 'fast-xml-parser'
+
 
 export function getDateArrayByRange(start: Date, end: Date): Date[] {
   const dateArray = Array.from({ length: differenceInCalendarDays(end, start) + 1}, (_, i) => {
@@ -70,4 +72,71 @@ export function getDateMap(items: IDatum[]) {
   })
 
   return map;
+}
+
+export function categorizeDataByLevels(data: IDatum[]) {
+  // 验证输入是否为数组
+  if (!Array.isArray(data)) {
+    throw new Error('Input data must be an array.');
+  }
+
+  // 提取所有 value 值并排序
+  const values = data.map(item => item.value).sort((a, b) => a - b);
+
+  // 计算边界值
+  const quartiles: number[] = [];
+  for (let i = 1; i < 5; i++) {
+    const index = (i / 5) * values.length;
+    if (Number.isInteger(index)) {
+      quartiles.push(values[index - 1]);
+    } else {
+      const lowerIndex = Math.floor(index);
+      const upperIndex = Math.ceil(index);
+      quartiles.push((values[lowerIndex - 1] + values[upperIndex - 1]) / 2);
+    }
+  }
+
+  // 更新每个数据点的 level
+  return data.map(item => ({
+    ...item,
+    level: item.value <= quartiles[0] ? 1 :
+      item.value <= quartiles[1] ? 2 :
+        item.value <= quartiles[2] ? 3 :
+          item.value <= quartiles[3] ? 4 : 5
+  }));
+}
+
+export function getStepData(data: never[]): IDatum[] {
+  const result: Record<string, number> = {}
+
+  for (const record of data) {
+    if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
+      
+      const rawDate = record['@_creationDate']
+      const strDate = new Date(rawDate).toLocaleDateString()
+
+      if (strDate in result) {
+        result[strDate] = result[strDate] + Number(record['@_value'])
+      } else {
+        result[strDate] = Number(record['@_value'])
+      }
+
+    }
+  }
+
+  return Object.entries(result).reduce((acc, next) =>{
+    return [
+      ...acc,
+      { dt: next[0], value: next[1], level: null }
+    ]
+  }, [] as IDatum[])
+}
+
+export function getOriginalRecords(text: string): never[] {
+  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
+  const jObj = parser.parse(text);
+
+  const result = jObj?.HealthData?.Record ?? null
+
+  return result
 }

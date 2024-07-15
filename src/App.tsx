@@ -1,131 +1,141 @@
-import { useEffect, useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
 import './App.css'
 
-import { getDateMap } from './common'
-import { type IDatum, type Week } from './constant'
-import DataTable from './DataTable'
-import { Button, Upload } from 'antd'
+import { CSSProperties, useEffect, useState } from 'react'
+// import reactLogo from './assets/react.svg'
+// import viteLogo from '/vite.svg'
+
+import { Button, Divider, message, Progress, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { XMLParser } from 'fast-xml-parser'
+import { categorizeDataByLevels, getOriginalRecords, getStepData } from './common'
+import { type IDatum } from './constant'
+import DataTable from './DataTable'
+import { DeleteOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 
 
-
-function categorizeDataByLevels(data: IDatum[]) {
-  // 验证输入是否为数组
-  if (!Array.isArray(data)) {
-    throw new Error('Input data must be an array.');
-  }
-
-  // 提取所有 value 值并排序
-  const values = data.map(item => item.value).sort((a, b) => a - b);
-
-  // 计算边界值
-  const quartiles: number[] = [];
-  for (let i = 1; i < 5; i++) {
-    const index = (i / 5) * values.length;
-    if (Number.isInteger(index)) {
-      quartiles.push(values[index - 1]);
-    } else {
-      const lowerIndex = Math.floor(index);
-      const upperIndex = Math.ceil(index);
-      quartiles.push((values[lowerIndex - 1] + values[upperIndex - 1]) / 2);
-    }
-  }
-
-  // 更新每个数据点的 level
-  return data.map(item => ({
-    ...item,
-    level: item.value <= quartiles[0] ? 1 :
-      item.value <= quartiles[1] ? 2 :
-        item.value <= quartiles[2] ? 3 :
-          item.value <= quartiles[3] ? 4 : 5
-  }));
-}
+const KEY = 'stepData'
 
 function App() {
-  const [dateMap, setDateMap] = useState<Record<Week, IDatum[]>>()
-
-  const [resultMap, setResultMap] = useState<Record<string, number>>()
+  const [percent, setPercent] = useState(0)
+  const [datumList, setDatumList] = useState<IDatum[]>([])
+  const [size, setSize] = useState(10)
 
   useEffect(() => {
-    console.log('App mounted ', resultMap)
+    console.log('App mounted ')
 
-    if (!resultMap) return
-
-    console.log("数据转换中...")
-    const unHandData: IDatum[] = []
-    for (const [key, value] of Object.entries(resultMap)) {
-      unHandData.push({
-        dt: key,
-        value,
-        level: null
-      })
+    try {
+      const res = localStorage.getItem(KEY)
+      const data = JSON.parse(res ?? '')
+      if (data) {
+        setDatumList(data)
+      }
+    } catch (error) {
+      console.log('error on localStorage ')
     }
-
-    const finalData = categorizeDataByLevels(unHandData)
-
-    const map = getDateMap(finalData)
-
-    console.log("数据渲染...")
-    setDateMap(
-      map
-    )
 
     return () => {
       console.log('App unmounted')
     }
-  }, [resultMap])
+  }, [])
+
+  function handleSizeChange(val: number) {
+    setSize(val)
+  }
 
   function handleFileChange(evt: UploadChangeParam<UploadFile<string>>) {
     const file = evt.file
 
     const reader = new FileReader()
-    reader.onload = async (e) => {
-      const XMLdata = (e.target?.result) ?? ''
-      const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
-      const jObj = parser.parse(XMLdata);
+  
+    reader.onprogress = (ev) => {
+      const { loaded, total } = ev
+      const val = Math.floor((loaded / total) * 100)
+      setPercent(val)
+    }
 
-      const recordList = jObj.HealthData.Record
+    reader.onload = (ev) => {
+      const textResult = (ev.target?.result) ?? ''
+      const originalResult = getOriginalRecords(textResult as string)
 
-      const stepDataList = []
+      const unSetData = getStepData(originalResult)
+      const list = categorizeDataByLevels(unSetData)
+      setDatumList(list);
 
-      for (const record of recordList) {
-        if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
-          stepDataList.push(record)
-        }
-      }
-
-      const result: Record<string, number> = {}
-
-      for (const record of stepDataList) {
-        const rawDate = record['@_creationDate']
-        const strDate = new Date(rawDate).toLocaleDateString()
-
-        if (strDate in result) {
-          result[strDate] = result[strDate] + Number(record['@_value'])
-        } else {
-          result[strDate] = Number(record['@_value'])
-        }
-
-      }
-
-      console.log('数据解析完成...')
-      setResultMap(result)
-    };
-    console.log('开始解析数据...')
+      message.info('数据解析完成')
+    }
     reader.readAsText(file as never as Blob)
+  }
 
+  const rootStyle: CSSProperties & { [key in string]: string | number } = {
+    '--cell-size': size + 'px'
+  }
+
+  function saveToLocalStorage() {
+    if (datumList.length === 0) {
+      message.warning('请先解析数据')
+      return
+    }
+
+    const key = KEY
+    const value = JSON.stringify(datumList)
+    localStorage.setItem(key, value)
+
+    message.info('数据已保存到本地浏览器')
+  }
+
+  function clearData() {
+    const key = KEY
+    localStorage.removeItem(key)
+    setDatumList([])
+
+    message.info('数据已清空')
   }
 
   return (
-    <>
-      <Upload beforeUpload={() => false} onChange={handleFileChange}>
-        <Button>Click to Upload</Button>
-      </Upload>
-      {dateMap ? <DataTable map={dateMap} /> : null}
-    </>
+    <div style={rootStyle}>
+      <div style={{ width: 450 }}>
+        <Space>
+          <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
+          <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
+        </Space>
+        <div>
+          <Upload beforeUpload={() => false} onChange={handleFileChange}>
+            <Button icon={<UploadOutlined />}>上传文件并解析</Button>
+          </Upload>
+          <LabelItem label='文件进度'>
+            <Progress percent={percent} type="line" />
+          </LabelItem>
+        </div>
+        <LabelItem label="调整单元格大小">
+          <Slider
+            min={5}
+            max={15}
+            value={size}
+            onChange={handleSizeChange}
+            tooltip={{ open: true }}
+          />
+        </LabelItem>
+        <LabelItem label='天数'>
+          {datumList.length + '天'}
+        </LabelItem>
+      </div>
+      <Divider />
+      <DataTable data={datumList} />
+    </div>
+  )
+}
+
+function LabelItem({
+  label,
+  children,
+}:{
+  label: string;
+  children: React.ReactNode
+}) {
+  return (
+    <div className='label-item'>
+      <div className='name'>{label}：</div>
+      <div style={{ flexGrow: 1 }}>{children}</div>
+    </div>
   )
 }
 
