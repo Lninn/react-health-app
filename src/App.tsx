@@ -8,7 +8,7 @@ import { Button, Divider, message, Progress, Skeleton, Slider, Space, Upload } f
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
 import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import type { IMonthItem, IDatum } from './constant'
-import DataTable from './DataTable'
+import HealthCalendar from './HealthCalendar'
 import {
   categorizeDataByLevels,
   getMonthList,
@@ -35,7 +35,7 @@ function App() {
 
     try {
       const res = localStorage.getItem(KEY)
-      const data = JSON.parse(res ?? '')
+      const data = JSON.parse(res ?? '[]')
       if (data) {
         setMonths(getMonthList(data))
         setDatumList(data)
@@ -156,7 +156,7 @@ function App() {
         <div style={{ display: 'grid', placeItems: 'center' }}>
           {
             datumList.length ? (
-              <DataTable months={months} data={datumList} />
+              <HealthCalendar months={months} data={datumList} />
             ) : <Skeleton />
           }
         </div>
