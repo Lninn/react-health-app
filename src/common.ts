@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, endOfMonth } from "date-fns"
+import { differenceInCalendarDays, endOfMonth, format, startOfMonth } from "date-fns"
 import { 
   isMonday,
   isTuesday,
@@ -52,22 +52,31 @@ export function getDateMap(items: IDatum[]) {
     'Sat': [],
     'Sun': [],
   }
+
+  function add(week: Week, item: IDatum) {
+    const m = new Date(item.dt).getMonth() + 1
+    map[week].push({
+      ...item,
+      flag: m % 2 === 0 ? 1 : 0
+    })
+  }
+
   items.forEach(item => {
     const date = item.dt
     if (isMonday(date)) {
-      map.Mon.push(item)
+      add('Mon', item)
     } else if (isTuesday(date)) {
-      map.Tue.push(item)
+      add('Tue', item)
     } else if (isWednesday(date)) {
-      map.Wed.push(item)
+      add('Wed', item)
     } else if (isThursday(date)) {
-      map.Thu.push(item)
+      add('Thu', item)
     } else if (isFriday(date)) {
-      map.Fri.push(item)
+      add('Fri', item)
     } else if (isSaturday(date)) {
-      map.Sat.push(item)
+      add('Sat', item)
     } else if (isSunday(date)) {
-      map.Sun.push(item)
+      add('Sun', item)
     }
   })
 
@@ -127,7 +136,7 @@ export function getStepData(data: never[]): IDatum[] {
   return Object.entries(result).reduce((acc, next) =>{
     return [
       ...acc,
-      { dt: next[0], value: next[1], level: null }
+      { dt: next[0], value: next[1], level: null, flag: 0 }
     ]
   }, [] as IDatum[])
 }
@@ -161,7 +170,8 @@ export function getOriginalRecords(text: string): never[] {
         filledList.splice(i + j - 1, 0, {
           dt: formattedDate,
           value: 0, // 默认 value
-          level: null // 默认 level
+          level: null, // 默认 level,
+          flag: 0,
         });
       }
     }
@@ -212,38 +222,54 @@ export function patchDataList(list: IDatum[]) {
   return finalList
 }
 
-export function getMonthList(data: IDatum[]) {
-  const months: IMonthItem[] = []
+export function getMonthList(data: IDatum[]): IMonthItem[] {
+  const result: IMonthItem[] = []
 
-  const gm = (item: IDatum) => {
-    return new Date(item.dt).getMonth() + 1
+  const gm = (item: IDatum) => new Date(item.dt).getMonth() + 1
+
+  const isTwoContinuousMonths = (date1: string, date2: string) => {
+    const d1 = new Date(date1)
+    const d2 = new Date(date2)
+    
+    const endOfDate1 = format(endOfMonth(d1), 'yyyy/M/d')
+    const startOfDate2 = format(startOfMonth(d2), 'yyyy/M/d')
+    
+    return (
+      endOfDate1 === date1 &&
+      startOfDate2 === date2
+    )
   }
 
+  const weekOfCount = 7
   let i = 0
   let span = 0
-  let monthString = ''
+
   while(i < data.length) {
-    const list = data.slice(i, i + 7)
+    const list = data.slice(i, i + weekOfCount)
 
-    const firstM = gm(data[i])
     const tmp = list.map(gm)
+    const isSameMonth = tmp.every(m => m === tmp[0])
 
-    monthString = data[i].dt
+    const isNotTwoContinuousMonths = !isTwoContinuousMonths(
+      data[(i + weekOfCount - 1) % data.length].dt,
+      data[(i + weekOfCount) % data.length].dt,
+    )
 
-    if (tmp.every(m => m === firstM) && span < 4) {
+    // const restCheck = tmp.length === weekOfCount
+    const restCheck = true
+    if (isSameMonth && isNotTwoContinuousMonths && restCheck) {
       span++
     } else {
-      months.push({
-        label: monthString === "2023/10/1" ? data[i-1].dt : monthString,
+      result.push({
+        label: data[i].dt,
         span: span + 1,
         logs: tmp,
       })
       span = 0
-      monthString = ''
     }
 
-    i += 7
+    i += weekOfCount
   }
 
-  return months
+  return result
 }

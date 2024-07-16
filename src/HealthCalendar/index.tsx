@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { type IDatum, type IMonthItem, weeks } from "../constant"
 import { useMemo } from "react"
 import { getDateMap } from "../common"
+import classnames from "classnames"
 
 
 interface IProps {
@@ -57,10 +58,19 @@ function Cell({
   item: IDatum
 }) {
   const title = format(item.dt, 'yyyy-MM-dd') + ` - ${item.value}`
+
+  const isDebug = false
+  const cls = classnames(
+    'HealthCalendar-day',
+    isDebug ? (
+      item.flag === 0 ? 'odd' : ''
+    ) : ''
+  )
+
   return (
     <Tooltip title={title}>
       <td
-        className='HealthCalendar-day'
+        className={cls}
         data-level={item.level ? +item.level - 1 : null}
       ></td>
     </Tooltip>
