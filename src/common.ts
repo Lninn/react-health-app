@@ -6,10 +6,30 @@ import {
   isThursday,
   isFriday,
   isSaturday,
-  isSunday
+  isSunday,
 } from 'date-fns'
 import type { IMonthItem, IDatum, Week } from "./constant"
 import { XMLParser } from 'fast-xml-parser'
+
+function formatYearMonthDay(dateTimeStr: string) {
+  const regex = /^(\d{4})-(\d{2})-(\d{2})/;
+  const match = dateTimeStr.match(regex);
+  
+  if (match) {
+    const year = match[1];
+    const month = match[2];
+    const day = match[3];
+    
+    // 保持月份为两位数字，如果小于10则前面补零
+    const formattedMonth = month.padStart(2, '0');
+    // 保持日期为两位数字，如果小于10则前面补零
+    const formattedDay = day.padStart(2, '0');
+    
+    return `${year}-${formattedMonth}-${formattedDay}`;
+  }
+  
+  return null; // 如果字符串不匹配，则返回 null
+}
 
 
 export function getDateArrayByRange(start: Date, end: Date): Date[] {
@@ -118,19 +138,24 @@ export function categorizeDataByLevels(data: IDatum[]) {
 export function getStepData(data: never[]): IDatum[] {
   const result: Record<string, number> = {}
 
-  for (const record of data) {
-    if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
-      
-      const rawDate = record['@_creationDate']
-      const strDate = new Date(rawDate).toLocaleDateString()
+  try {
+    for (const record of data) {
+      if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
+        
+        const rawDate = record['@_creationDate']
+        const normalDate = formatYearMonthDay(rawDate) ?? ''
+        const strDate = new Date(normalDate).toLocaleDateString()
+  
+        if (strDate in result) {
+          result[strDate] = result[strDate] + Number(record['@_value'])
+        } else {
+          result[strDate] = Number(record['@_value'])
+        }
 
-      if (strDate in result) {
-        result[strDate] = result[strDate] + Number(record['@_value'])
-      } else {
-        result[strDate] = Number(record['@_value'])
       }
-
     }
+  } catch (error) {
+    console.log('getStepData error ')
   }
 
   return Object.entries(result).reduce((acc, next) =>{

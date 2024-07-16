@@ -32,10 +32,6 @@
   height: var(--cell-size);
 }
 
-.paste-area {
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin: 20px;
-  min-height: 100px;
-  outline: none;
-} 
+.table-wrapper {
+  overflow: auto;
+}

@@ -6,7 +6,7 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 
 import { Button, Divider, message, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { CopyOutlined, DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import type { IMonthItem, IDatum } from './constant'
 import HealthCalendar from './HealthCalendar'
 import {
@@ -39,7 +39,6 @@ function App() {
   const [size, setSize] = useState(12)
 
   const dataNodeRef = useRef<HTMLDivElement | null>(null)
-  const pasteAreaRef = useRef<HTMLDivElement | null>(null)
 
   function handleFile(file: UploadFile<string>) {
     const originalFileName = extractName(file.name);
@@ -92,31 +91,6 @@ function App() {
 
   useEffect(() => {
     console.log('App mounted ')
-
-    const pasteArea = pasteAreaRef.current
-    if (!pasteArea) return
-
-    pasteArea.addEventListener('paste', (event) => {
-      event.preventDefault(); // 阻止默认行为
-
-      if (event.clipboardData && event.clipboardData.items) {
-        for (let i = 0; i < event.clipboardData.items.length; i++) {
-          const item = event.clipboardData.items[i];
-
-          if (item.kind === 'file') {
-            const file = item.getAsFile();
-            console.log('Pasted file:', file);
-
-            if (file) {
-              // 在这里处理文件，例如使用 JSZip 解压 ZIP 文件
-              handleFile(file as never);
-            }
-          } else {
-            console.log('Pasted text:', event.clipboardData.getData('text/plain'));
-          }
-        }
-      }
-    });
 
     try {
       const res = localStorage.getItem(KEY)
@@ -184,16 +158,8 @@ function App() {
       });
   }
 
-  function getFileFromClipboard() {
-    const pasteArea = pasteAreaRef.current
-    if (!pasteArea) return
-    pasteArea.focus();
-  }
-
   return (
     <div style={rootStyle}>
-      <div ref={pasteAreaRef} className='paste-area' contentEditable="true" tabIndex={0} />
-
       <div>
         <Space style={{ marginBlockEnd: 16 }}>
           <Button
@@ -208,7 +174,6 @@ function App() {
             <Button icon={<UploadOutlined />}>上传文件并解析</Button>
           </Upload>
           <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
-          <Button title='获取剪切板的文件' onClick={getFileFromClipboard} icon={<CopyOutlined />} />
         </Space>
 
         <LabelItem label="调整单元格大小">
