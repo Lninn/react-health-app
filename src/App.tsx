@@ -4,7 +4,7 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 
-import { Button, Divider, message, Progress, Skeleton, Slider, Space, Upload } from 'antd'
+import { Button, Divider, message, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
 import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import type { IMonthItem, IDatum } from './constant'
@@ -18,12 +18,12 @@ import {
 } from './common'
 import * as htmlToImage from 'html-to-image';
 import downloadjs from 'downloadjs'
+import JSZip from 'jszip';
 
 
 const KEY = 'stepData'
 
 function App() {
-  const [percent, setPercent] = useState(0)
   const [datumList, setDatumList] = useState<IDatum[]>([])
   const [months, setMonths] = useState<IMonthItem[]>([])
   const [size, setSize] = useState(12)
@@ -56,29 +56,64 @@ function App() {
   function handleFileChange(evt: UploadChangeParam<UploadFile<string>>) {
     const file = evt.file
 
-    const reader = new FileReader()
-  
-    reader.onprogress = (ev) => {
-      const { loaded, total } = ev
-      const val = Math.floor((loaded / total) * 100)
-      setPercent(val)
+    if (!file) {
+      console.log('No file selected');
+      return;
     }
 
-    reader.onload = (ev) => {
-      const textResult = (ev.target?.result) ?? ''
-      const originalResult = getOriginalRecords(textResult as string)
+    const originalFileName = extractName(file.name);
 
-      const unSetData = getStepData(originalResult)
-      const list = categorizeDataByLevels(unSetData)
-
-     const finalList = patchDataList(list)
-
-      setDatumList(finalList);
-      setMonths(getMonthList(finalList))
-
-      message.info('数据解析完成')
+    function extractName(filename: string) {
+      const result = filename.split('.')
+      return result[0]
     }
-    reader.readAsText(file as never as Blob)
+
+    function getFileName(fullPath: string) {
+      const result = fullPath.split('/')
+      return extractName(result[result.length - 1])
+    }
+
+    async function loadAndProcessZip(zipData: ArrayBuffer, run: (fileContent: string) => void) {
+      // 使用 JSZip 解析 ZIP 文件
+      const zip = new JSZip();
+      const loadedZip = await zip.loadAsync(zipData);
+
+      // 遍历 ZIP 文件中的所有条目
+      Object.keys(loadedZip.files).forEach(async fileName => {
+        const file = loadedZip.files[fileName];
+
+        if (!file.dir) {
+          // 读取文件内容为文本或 ArrayBuffer
+          const fileContent = await file.async('text'); // 或者使用 'arraybuffer' 或 'nodebuffer'
+          console.log(`Content of ${fileName}:`);
+
+          const realFilename = getFileName(file.name)
+          console.log({ realFilename, originalFileName })
+          if (realFilename === originalFileName) {
+            run(fileContent)
+          }
+        }
+      });
+    }
+
+    const fileReader = new FileReader();
+    fileReader.onload = () => {
+      const zipData = fileReader.result;
+      loadAndProcessZip(zipData as ArrayBuffer, (fileContent) => {
+        const originalResult = getOriginalRecords(fileContent)
+
+        const unSetData = getStepData(originalResult)
+        const list = categorizeDataByLevels(unSetData)
+
+        const finalList = patchDataList(list)
+
+        setDatumList(finalList);
+        setMonths(getMonthList(finalList))
+
+        message.info('数据解析完成')
+      });
+    };
+    fileReader.readAsArrayBuffer(file as never as Blob);
   }
 
   const rootStyle: CSSProperties & { [key in string]: string | number } = {
@@ -111,9 +146,9 @@ function App() {
     if (!node) return
 
     htmlToImage.toPng(node)
-    .then(function (dataUrl) {
-      downloadjs(dataUrl, 'my-node.png');
-    });
+      .then(function (dataUrl) {
+        downloadjs(dataUrl, 'my-node.png');
+      });
   }
 
   return (
@@ -133,10 +168,6 @@ function App() {
           </Upload>
           <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
         </Space>
-
-        <LabelItem label='文件解析  进度'>
-          <Progress percent={percent} type="line" />
-        </LabelItem>
 
         <LabelItem label="调整单元格大小">
           <Slider
@@ -180,7 +211,7 @@ function App() {
 function LabelItem({
   label,
   children,
-}:{
+}: {
   label: string;
   children: React.ReactNode
 }) {
