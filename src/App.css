@@ -46,3 +46,16 @@
   overflow-y: hidden;
   overflow-x: auto;
 }
+
+.logs-container {
+  height: 300px;
+  overflow-y: auto;
+}
+
+.logs {
+  white-space: pre-wrap; 
+  word-wrap: break-word; 
+  white-space: -moz-pre-wrap; 
+  white-space: -pre-wrap; 
+  white-space: -o-pre-wrap;
+}

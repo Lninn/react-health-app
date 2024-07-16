@@ -20,7 +20,10 @@ import { useDataProcessing } from './HealthCalendar/process'
 import { Footer } from './components'
 
 
-new VConsole();
+const enableConsole = false
+if (enableConsole) {
+  new VConsole();
+}
 
 const KEY = 'stepData'
 
@@ -40,7 +43,14 @@ function App() {
   const [loading, setLoading] = useState(false)
 
   const dataNodeRef = useRef<HTMLDivElement | null>(null)
-  const { datumList, months, setOriginalList, setDatumList, setMonths } = useDataProcessing()
+  const {
+    logs,
+    datumList,
+    months,
+    setOriginalList,
+    setDatumList,
+    setMonths
+  } = useDataProcessing()
 
   function handleFile(file: UploadFile<string>) {
     const originalFileName = extractName(file.name);
@@ -204,6 +214,9 @@ function App() {
             <div className='cell HealthCalendar-day' data-level="3" />
             <div className='cell HealthCalendar-day' data-level="4" />
           </div>
+        </div>
+        <div className='logs-container'>
+          <pre className='logs'>{logs.join('\n')}</pre>
         </div>
       </Skeleton>
       <Footer />

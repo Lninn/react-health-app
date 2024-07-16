@@ -10,8 +10,15 @@ export function useDataProcessing() {
 
   const [originalList, setOriginalList] = useState<never[]>([])
 
-  useEffect(() => {
+  const [logs, setLogs] = useState<string[]>([])
+  function addLog(message: string) {
+    setLogs(prev => [
+      ...prev,
+      message
+    ])
+  }
 
+  useEffect(() => {
     if (originalList.length === 0) {
       return
     }
@@ -56,7 +63,7 @@ export function useDataProcessing() {
 
     // 示例处理器函数
     const sampleProcessor = (batch: never[]) => {
-      console.log(`开始处理第${batch[0]['@_startDate']}到第${batch[batch.length - 1]['@_endDate']}的数据。`);
+      addLog(`开始处理第${batch[0]['@_startDate']}到第${batch[batch.length - 1]['@_endDate']}的数据。`);
 
       for (const record of batch) {
         if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
@@ -80,12 +87,13 @@ export function useDataProcessing() {
       await asyncBatchProcess(originalList, 1000, sampleProcessor);
       const resultList = resultAsArray();
       finalProcess(resultList);
-      console.log('所有数据处理完毕。');
+      addLog('所有数据处理完毕。');
     })();
 
   }, [originalList])
 
   return {
+    logs,
     datumList,
     months,
     setOriginalList,
