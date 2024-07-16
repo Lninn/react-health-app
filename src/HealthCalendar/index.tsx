@@ -1,6 +1,6 @@
 import './index.css'
 
-import { Tooltip } from "antd"
+import { Skeleton, Tooltip } from "antd"
 import { format } from "date-fns"
 import { type IDatum, type IMonthItem, weeks } from "../constant"
 import { useMemo } from "react"
@@ -20,6 +20,12 @@ export default function HealthCalendar({
   const map = useMemo(() => {
     return getDateMap(data)
   }, [data])
+
+  if (data.length === 0) {
+    return (
+      <Skeleton />
+    )
+  }
 
   return (
     <table className='HealthCalendar-table'>

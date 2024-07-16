@@ -199,12 +199,9 @@ function App() {
               {datumList.length + '天'}
             </LabelItem>
           </div>
+
           <div className="table-wrapper" ref={dataNodeRef}>
-            {
-              datumList.length ? (
-                <HealthCalendar months={months} data={datumList} />
-              ) : <Skeleton />
-            }
+            <HealthCalendar months={months} data={datumList} />
           </div>
 
           <div className='indicator'>
