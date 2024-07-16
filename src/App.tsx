@@ -6,7 +6,7 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 
 import { Button, Divider, message, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import type { IMonthItem, IDatum } from './constant'
 import HealthCalendar from './HealthCalendar'
 import {
@@ -23,15 +23,100 @@ import JSZip from 'jszip';
 
 const KEY = 'stepData'
 
+function extractName(filename: string) {
+  const result = filename.split('.')
+  return result[0]
+}
+
+function getFileName(fullPath: string) {
+  const result = fullPath.split('/')
+  return extractName(result[result.length - 1])
+}
+
 function App() {
   const [datumList, setDatumList] = useState<IDatum[]>([])
   const [months, setMonths] = useState<IMonthItem[]>([])
   const [size, setSize] = useState(12)
 
   const dataNodeRef = useRef<HTMLDivElement | null>(null)
+  const pasteAreaRef = useRef<HTMLDivElement | null>(null)
+
+  function handleFile(file: UploadFile<string>) {
+    const originalFileName = extractName(file.name);
+
+    const fileReader = new FileReader();
+    fileReader.onload = () => {
+      const zipData = fileReader.result;
+      loadAndProcessZip(zipData as ArrayBuffer, originalFileName, (fileContent) => {
+        const originalResult = getOriginalRecords(fileContent)
+
+        const unSetData = getStepData(originalResult)
+        const list = categorizeDataByLevels(unSetData)
+
+        const finalList = patchDataList(list)
+
+        setDatumList(finalList);
+        setMonths(getMonthList(finalList))
+
+        message.info('数据解析完成')
+      });
+    };
+    fileReader.readAsArrayBuffer(file as never as Blob);
+  }
+
+  async function loadAndProcessZip(
+    zipData: ArrayBuffer,
+    originalFileName: string,
+    run: (fileContent: string) => void
+  ) {
+    // 使用 JSZip 解析 ZIP 文件
+    const zip = new JSZip();
+    const loadedZip = await zip.loadAsync(zipData);
+
+    // 遍历 ZIP 文件中的所有条目
+    Object.keys(loadedZip.files).forEach(async fileName => {
+      const file = loadedZip.files[fileName];
+
+      if (!file.dir) {
+        // 读取文件内容为文本或 ArrayBuffer
+        const fileContent = await file.async('text'); // 或者使用 'arraybuffer' 或 'nodebuffer'
+        console.log(`Content of ${fileName}:`);
+
+        const realFilename = getFileName(file.name)
+        if (realFilename === originalFileName) {
+          run(fileContent)
+        }
+      }
+    });
+  }
 
   useEffect(() => {
     console.log('App mounted ')
+
+    const pasteArea = pasteAreaRef.current
+    if (!pasteArea) return
+
+    pasteArea.addEventListener('paste', (event) => {
+      event.preventDefault(); // 阻止默认行为
+
+      if (event.clipboardData && event.clipboardData.items) {
+        for (let i = 0; i < event.clipboardData.items.length; i++) {
+          const item = event.clipboardData.items[i];
+
+          if (item.kind === 'file') {
+            const file = item.getAsFile();
+            console.log('Pasted file:', file);
+
+            if (file) {
+              // 在这里处理文件，例如使用 JSZip 解压 ZIP 文件
+              handleFile(file as never);
+            }
+          } else {
+            console.log('Pasted text:', event.clipboardData.getData('text/plain'));
+          }
+        }
+      }
+    });
 
     try {
       const res = localStorage.getItem(KEY)
@@ -61,59 +146,7 @@ function App() {
       return;
     }
 
-    const originalFileName = extractName(file.name);
-
-    function extractName(filename: string) {
-      const result = filename.split('.')
-      return result[0]
-    }
-
-    function getFileName(fullPath: string) {
-      const result = fullPath.split('/')
-      return extractName(result[result.length - 1])
-    }
-
-    async function loadAndProcessZip(zipData: ArrayBuffer, run: (fileContent: string) => void) {
-      // 使用 JSZip 解析 ZIP 文件
-      const zip = new JSZip();
-      const loadedZip = await zip.loadAsync(zipData);
-
-      // 遍历 ZIP 文件中的所有条目
-      Object.keys(loadedZip.files).forEach(async fileName => {
-        const file = loadedZip.files[fileName];
-
-        if (!file.dir) {
-          // 读取文件内容为文本或 ArrayBuffer
-          const fileContent = await file.async('text'); // 或者使用 'arraybuffer' 或 'nodebuffer'
-          console.log(`Content of ${fileName}:`);
-
-          const realFilename = getFileName(file.name)
-          console.log({ realFilename, originalFileName })
-          if (realFilename === originalFileName) {
-            run(fileContent)
-          }
-        }
-      });
-    }
-
-    const fileReader = new FileReader();
-    fileReader.onload = () => {
-      const zipData = fileReader.result;
-      loadAndProcessZip(zipData as ArrayBuffer, (fileContent) => {
-        const originalResult = getOriginalRecords(fileContent)
-
-        const unSetData = getStepData(originalResult)
-        const list = categorizeDataByLevels(unSetData)
-
-        const finalList = patchDataList(list)
-
-        setDatumList(finalList);
-        setMonths(getMonthList(finalList))
-
-        message.info('数据解析完成')
-      });
-    };
-    fileReader.readAsArrayBuffer(file as never as Blob);
+    handleFile(file);
   }
 
   const rootStyle: CSSProperties & { [key in string]: string | number } = {
@@ -151,9 +184,17 @@ function App() {
       });
   }
 
+  function getFileFromClipboard() {
+    const pasteArea = pasteAreaRef.current
+    if (!pasteArea) return
+    pasteArea.focus();
+  }
+
   return (
     <div style={rootStyle}>
-      <div style={{ width: 450 }}>
+      <div ref={pasteAreaRef} className='paste-area' contentEditable="true" tabIndex={0} />
+
+      <div>
         <Space style={{ marginBlockEnd: 16 }}>
           <Button
             icon={<GithubOutlined />}
@@ -167,6 +208,7 @@ function App() {
             <Button icon={<UploadOutlined />}>上传文件并解析</Button>
           </Upload>
           <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
+          <Button title='获取剪切板的文件' onClick={getFileFromClipboard} icon={<CopyOutlined />} />
         </Space>
 
         <LabelItem label="调整单元格大小">
