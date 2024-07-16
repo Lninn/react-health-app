@@ -31,7 +31,7 @@ export function useDataProcessing() {
       setMonths(getMonthList(finalList))
     }
 
-    async function asyncBatchProcess(data: never[], batchSize: number, processor: (batch: never[]) => boolean) {
+    async function asyncBatchProcess(data: never[], batchSize: number, processor: (batch: never[], index: number) => boolean) {
       const totalBatches = Math.ceil(data.length / batchSize);
       for (let i = 0; i < totalBatches; i++) {
         const start = i * batchSize;
@@ -39,7 +39,7 @@ export function useDataProcessing() {
         const batch = data.slice(start, end);
 
         // 使用Promise.resolve()确保处理器函数执行完毕，但不阻塞主线程
-        const status = await Promise.resolve().then(() => processor(batch));
+        const status = await Promise.resolve().then(() => processor(batch, i));
 
         // 给JavaScript引擎一个机会去处理其他任务，避免长时间阻塞
         await new Promise(resolve => requestAnimationFrame(resolve));
@@ -62,9 +62,10 @@ export function useDataProcessing() {
     }
 
     // 示例处理器函数
-    const sampleProcessor = (batch: never[]) => {
-      addLog(`开始处理第${batch[0]['@_startDate']}到第${batch[batch.length - 1]['@_endDate']}的数据。`);
+    const sampleProcessor = (batch: never[], index: number) => {
+      addLog(`正在处理第${index + 1}批数据...`);
 
+      let i = 0
       for (const record of batch) {
         if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
 
@@ -76,15 +77,17 @@ export function useDataProcessing() {
           } else {
             result[dateString] = Number(record['@_value'])
           }
+
+          i++;
         }
       }
 
-      return result.length !== 0;
+      return i !== 0;
     };
 
     // 调用异步批量处理函数
     (async () => {
-      await asyncBatchProcess(originalList, 1000, sampleProcessor);
+      await asyncBatchProcess(originalList, 2000, sampleProcessor);
       const resultList = resultAsArray();
       finalProcess(resultList);
       addLog('所有数据处理完毕。');
