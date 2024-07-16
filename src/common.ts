@@ -177,6 +177,10 @@ export function getOriginalRecords(text: string): never[] {
 
 // 假设我们没有使用额外的库，使用原生 JavaScript 实现
  export function fillMissingDates(dataList: IDatum[]): IDatum[] {
+  if (dataList.length === 0) {
+    return [];
+  }
+
   const filledList: IDatum[] = [...dataList]; // 创建原始列表的副本，避免修改原列表
   let lastDate = new Date(filledList[0].dt);
 
@@ -229,6 +233,10 @@ export function isDataContinuousInRange(start: string, end: string, dataList: ID
 }
 
 export function patchDataList(list: IDatum[]) {
+  if (list.length === 0) {
+    return [];
+  }
+
   const sliceList = list.sort((prev, next) => {
     const prevDate = new Date(prev.dt)
     const nextDate = new Date(next.dt)

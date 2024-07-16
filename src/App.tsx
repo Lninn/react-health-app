@@ -19,7 +19,9 @@ import {
 import * as htmlToImage from 'html-to-image';
 import downloadjs from 'downloadjs'
 import JSZip from 'jszip';
+import VConsole from 'vconsole';
 
+new VConsole();
 
 const KEY = 'stepData'
 
@@ -37,8 +39,11 @@ function App() {
   const [datumList, setDatumList] = useState<IDatum[]>([])
   const [months, setMonths] = useState<IMonthItem[]>([])
   const [size, setSize] = useState(12)
+  const [loading, setLoading] = useState(false)
 
   const dataNodeRef = useRef<HTMLDivElement | null>(null)
+
+  const [originalList, setOriginalList] = useState<never[]>([])
 
   function handleFile(file: UploadFile<string>) {
     const originalFileName = extractName(file.name);
@@ -48,18 +53,13 @@ function App() {
       const zipData = fileReader.result;
       loadAndProcessZip(zipData as ArrayBuffer, originalFileName, (fileContent) => {
         const originalResult = getOriginalRecords(fileContent)
+        setOriginalList(originalResult)
 
-        const unSetData = getStepData(originalResult)
-        const list = categorizeDataByLevels(unSetData)
-
-        const finalList = patchDataList(list)
-
-        setDatumList(finalList);
-        setMonths(getMonthList(finalList))
-
-        message.info('数据解析完成')
+        message.info('数据解析完成');
+        setLoading(false);
       });
     };
+    setLoading(true);
     fileReader.readAsArrayBuffer(file as never as Blob);
   }
 
@@ -88,6 +88,15 @@ function App() {
       }
     });
   }
+
+  useEffect(() => {
+    const unSetData = getStepData(originalList)
+    const list = categorizeDataByLevels(unSetData)
+    const finalList = patchDataList(list)
+
+    setDatumList(finalList);
+    setMonths(getMonthList(finalList))
+  }, [originalList])
 
   useEffect(() => {
     console.log('App mounted ')
@@ -159,59 +168,61 @@ function App() {
   }
 
   return (
-    <div style={rootStyle}>
-      <div>
-        <Space style={{ marginBlockEnd: 16 }}>
-          <Button
-            icon={<GithubOutlined />}
-            onClick={() => {
-              window.open('https://github.com/Lninn/vite-react-project')
-            }}
-          />
-          <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
-          <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
-          <Upload beforeUpload={() => false} onChange={handleFileChange}>
-            <Button icon={<UploadOutlined />}>上传文件并解析</Button>
-          </Upload>
-          <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
-        </Space>
+    <Skeleton active loading={loading} >
+      <div style={rootStyle}>
+        <div>
+          <Space style={{ marginBlockEnd: 16 }}>
+            <Button
+              icon={<GithubOutlined />}
+              onClick={() => {
+                window.open('https://github.com/Lninn/vite-react-project')
+              }}
+            />
+            <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
+            <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
+            <Upload beforeUpload={() => false} onChange={handleFileChange}>
+              <Button icon={<UploadOutlined />}>上传文件并解析</Button>
+            </Upload>
+            <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
+          </Space>
 
-        <LabelItem label="调整单元格大小">
-          <Slider
-            min={5}
-            max={15}
-            value={size}
-            onChange={handleSizeChange}
-            tooltip={{ open: true }}
-          />
-        </LabelItem>
-        <LabelItem label='天数'>
-          {datumList.length + '天'}
-        </LabelItem>
-      </div>
-      <Divider />
-      <div className="table-wrapper" ref={dataNodeRef}>
-        <div style={{ display: 'grid', placeItems: 'center' }}>
-          {
-            datumList.length ? (
-              <HealthCalendar months={months} data={datumList} />
-            ) : <Skeleton />
-          }
+          <LabelItem label="调整单元格大小">
+            <Slider
+              min={5}
+              max={15}
+              value={size}
+              onChange={handleSizeChange}
+              tooltip={{ open: false }}
+            />
+          </LabelItem>
+          <LabelItem label='天数'>
+            {datumList.length + '天'}
+          </LabelItem>
+        </div>
+        <Divider />
+        <div className="table-wrapper" ref={dataNodeRef}>
+          <div style={{ display: 'grid', placeItems: 'center' }}>
+            {
+              datumList.length ? (
+                <HealthCalendar months={months} data={datumList} />
+              ) : <Skeleton />
+            }
+          </div>
+
+          <div className='indicator'>
+            <div className='cell ContributionCalendar-day' />
+            <div className='cell ContributionCalendar-day' data-level="1" />
+            <div className='cell ContributionCalendar-day' data-level="2" />
+            <div className='cell ContributionCalendar-day' data-level="3" />
+            <div className='cell ContributionCalendar-day' data-level="4" />
+          </div>
         </div>
 
-        <div className='indicator'>
-          <div className='cell ContributionCalendar-day' />
-          <div className='cell ContributionCalendar-day' data-level="1" />
-          <div className='cell ContributionCalendar-day' data-level="2" />
-          <div className='cell ContributionCalendar-day' data-level="3" />
-          <div className='cell ContributionCalendar-day' data-level="4" />
+        <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
+          数据来自 Apple 健康 App
         </div>
       </div>
-
-      <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
-        数据来自 Apple 健康 App
-      </div>
-    </div>
+    </Skeleton>
   )
 }
 
