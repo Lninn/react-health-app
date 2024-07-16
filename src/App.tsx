@@ -17,6 +17,8 @@ import downloadjs from 'downloadjs'
 import JSZip from 'jszip';
 import VConsole from 'vconsole';
 import { useDataProcessing } from './HealthCalendar/process'
+import { Footer } from './components'
+
 
 new VConsole();
 
@@ -201,11 +203,9 @@ function App() {
           <div className='cell HealthCalendar-day' data-level="3" />
           <div className='cell HealthCalendar-day' data-level="4" />
         </div>
-
-        <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>
-          数据来自 Apple 健康 App
-        </div>
       </div>
+
+      <Footer />
     </Skeleton>
   )
 }
