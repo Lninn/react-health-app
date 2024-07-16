@@ -2,8 +2,16 @@
   padding: 24px;
 }
 
-.card {
-  padding: 2em;
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: 16px;
+}
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .read-the-docs {

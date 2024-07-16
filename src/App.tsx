@@ -4,9 +4,9 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 // import reactLogo from './assets/react.svg'
 // import viteLogo from '/vite.svg'
 
-import { Button, Divider, message, Skeleton, Slider, Space, Upload } from 'antd'
+import { Button, Divider, message, Skeleton, Slider, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
-import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FileImageOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
 import HealthCalendar from './HealthCalendar'
 import {
   getMonthList,
@@ -156,57 +156,58 @@ function App() {
   }
 
   return (
-    <Skeleton active loading={loading} >
-      <div style={rootStyle}>
-        <div>
-          <Space style={{ marginBlockEnd: 16 }}>
-            <Button
-              icon={<GithubOutlined />}
-              onClick={() => {
-                window.open('https://github.com/Lninn/vite-react-project')
-              }}
-            />
-            <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
-            <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
-            <Upload beforeUpload={() => false} onChange={handleFileChange}>
-              <Button icon={<UploadOutlined />}>上传文件并解析</Button>
-            </Upload>
-            <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
-          </Space>
+    <>
+      <h2 className='app-title'>
+        Health 健康日历
+      </h2>
+      <Divider />
+      <Skeleton active loading={loading} >
+        <div style={rootStyle}>
+          <div>
+            <div className='actions'>
+              <Upload beforeUpload={() => false} onChange={handleFileChange}>
+                <Button icon={<UploadOutlined />}>上传文件并解析</Button>
+              </Upload>
 
-          <LabelItem label="调整单元格大小">
-            <Slider
-              min={5}
-              max={15}
-              value={size}
-              onChange={handleSizeChange}
-              tooltip={{ open: false }}
-            />
-          </LabelItem>
-          <LabelItem label='天数'>
-            {datumList.length + '天'}
-          </LabelItem>
-        </div>
-        <Divider />
-        <div className="table-wrapper" ref={dataNodeRef}>
-          {
-            datumList.length ? (
-              <HealthCalendar months={months} data={datumList} />
-            ) : <Skeleton />
-          }
-        </div>
+              <div className='right-actions'>
+                <Button title='保存数据到本地' onClick={saveToLocalStorage} icon={<SaveOutlined />} />
+                <Button title='清空数据' onClick={clearData} icon={<DeleteOutlined />} />
+                <Button title='保存为图片' onClick={saveAsImage} icon={<FileImageOutlined />} />
+              </div>
+            </div>
 
-        <div className='indicator'>
-          <div className='cell HealthCalendar-day' />
-          <div className='cell HealthCalendar-day' data-level="1" />
-          <div className='cell HealthCalendar-day' data-level="2" />
-          <div className='cell HealthCalendar-day' data-level="3" />
-          <div className='cell HealthCalendar-day' data-level="4" />
-        </div>
-      </div>
+            <LabelItem label="调整单元格大小">
+              <Slider
+                min={5}
+                max={15}
+                value={size}
+                onChange={handleSizeChange}
+                tooltip={{ open: false }}
+              />
+            </LabelItem>
+            <LabelItem label='天数'>
+              {datumList.length + '天'}
+            </LabelItem>
+          </div>
+          <div className="table-wrapper" ref={dataNodeRef}>
+            {
+              datumList.length ? (
+                <HealthCalendar months={months} data={datumList} />
+              ) : <Skeleton />
+            }
+          </div>
 
+          <div className='indicator'>
+            <div className='cell HealthCalendar-day' />
+            <div className='cell HealthCalendar-day' data-level="1" />
+            <div className='cell HealthCalendar-day' data-level="2" />
+            <div className='cell HealthCalendar-day' data-level="3" />
+            <div className='cell HealthCalendar-day' data-level="4" />
+          </div>
+        </div>
+      </Skeleton>
       <Footer />
-    </Skeleton>
+    </>
   )
 }
 

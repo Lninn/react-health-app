@@ -10,3 +10,8 @@
   font-size: 12px;
   color: #999;
 }
+
+.footer-content {
+  display: inline-flex;
+  align-items: center;
+}
