@@ -29,9 +29,12 @@
   margin-block-start: 16px;
 }
 .indicator .cell {
-  height: var(--cell-size);
+  height: var(--cell-size, 10px);
+  width: var(--cell-size, 10px);
 }
 
 .table-wrapper {
-  overflow: auto;
+  max-width: 100%;
+  overflow-y: hidden;
+  overflow-x: auto;
 }

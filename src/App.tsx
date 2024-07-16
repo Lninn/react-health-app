@@ -7,19 +7,16 @@ import { CSSProperties, useEffect, useRef, useState } from 'react'
 import { Button, Divider, message, Skeleton, Slider, Space, Upload } from 'antd'
 import { UploadChangeParam, UploadFile } from 'antd/es/upload'
 import { DeleteOutlined, FileImageOutlined, GithubOutlined, SaveOutlined, UploadOutlined } from '@ant-design/icons'
-import type { IMonthItem, IDatum } from './constant'
 import HealthCalendar from './HealthCalendar'
 import {
-  categorizeDataByLevels,
   getMonthList,
   getOriginalRecords,
-  getStepData,
-  patchDataList
 } from './common'
 import * as htmlToImage from 'html-to-image';
 import downloadjs from 'downloadjs'
 import JSZip from 'jszip';
 import VConsole from 'vconsole';
+import { useDataProcessing } from './HealthCalendar/process'
 
 new VConsole();
 
@@ -36,14 +33,12 @@ function getFileName(fullPath: string) {
 }
 
 function App() {
-  const [datumList, setDatumList] = useState<IDatum[]>([])
-  const [months, setMonths] = useState<IMonthItem[]>([])
-  const [size, setSize] = useState(12)
+
+  const [size, setSize] = useState(10)
   const [loading, setLoading] = useState(false)
 
   const dataNodeRef = useRef<HTMLDivElement | null>(null)
-
-  const [originalList, setOriginalList] = useState<never[]>([])
+  const { datumList, months, setOriginalList, setDatumList, setMonths } = useDataProcessing()
 
   function handleFile(file: UploadFile<string>) {
     const originalFileName = extractName(file.name);
@@ -53,7 +48,7 @@ function App() {
       const zipData = fileReader.result;
       loadAndProcessZip(zipData as ArrayBuffer, originalFileName, (fileContent) => {
         const originalResult = getOriginalRecords(fileContent)
-        setOriginalList(originalResult)
+        setOriginalList(originalResult);
 
         message.info('数据解析完成');
         setLoading(false);
@@ -88,15 +83,6 @@ function App() {
       }
     });
   }
-
-  useEffect(() => {
-    const unSetData = getStepData(originalList)
-    const list = categorizeDataByLevels(unSetData)
-    const finalList = patchDataList(list)
-
-    setDatumList(finalList);
-    setMonths(getMonthList(finalList))
-  }, [originalList])
 
   useEffect(() => {
     console.log('App mounted ')
@@ -201,21 +187,19 @@ function App() {
         </div>
         <Divider />
         <div className="table-wrapper" ref={dataNodeRef}>
-          <div style={{ display: 'grid', placeItems: 'center' }}>
-            {
-              datumList.length ? (
-                <HealthCalendar months={months} data={datumList} />
-              ) : <Skeleton />
-            }
-          </div>
+          {
+            datumList.length ? (
+              <HealthCalendar months={months} data={datumList} />
+            ) : <Skeleton />
+          }
+        </div>
 
-          <div className='indicator'>
-            <div className='cell ContributionCalendar-day' />
-            <div className='cell ContributionCalendar-day' data-level="1" />
-            <div className='cell ContributionCalendar-day' data-level="2" />
-            <div className='cell ContributionCalendar-day' data-level="3" />
-            <div className='cell ContributionCalendar-day' data-level="4" />
-          </div>
+        <div className='indicator'>
+          <div className='cell HealthCalendar-day' />
+          <div className='cell HealthCalendar-day' data-level="1" />
+          <div className='cell HealthCalendar-day' data-level="2" />
+          <div className='cell HealthCalendar-day' data-level="3" />
+          <div className='cell HealthCalendar-day' data-level="4" />
         </div>
 
         <div style={{ fontSize: 12, color: '#999', textAlign: 'center' }}>

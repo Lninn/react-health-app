@@ -14,3 +14,5 @@ export interface IMonthItem {
   span: number
   logs: number[]
 }
+
+export const DATE_FORMAT = 'yyyy/MM/dd'

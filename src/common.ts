@@ -8,28 +8,8 @@ import {
   isSaturday,
   isSunday,
 } from 'date-fns'
-import type { IMonthItem, IDatum, Week } from "./constant"
+import { type IMonthItem, type IDatum, type Week, DATE_FORMAT } from "./constant"
 import { XMLParser } from 'fast-xml-parser'
-
-function formatYearMonthDay(dateTimeStr: string) {
-  const regex = /^(\d{4})-(\d{2})-(\d{2})/;
-  const match = dateTimeStr.match(regex);
-  
-  if (match) {
-    const year = match[1];
-    const month = match[2];
-    const day = match[3];
-    
-    // 保持月份为两位数字，如果小于10则前面补零
-    const formattedMonth = month.padStart(2, '0');
-    // 保持日期为两位数字，如果小于10则前面补零
-    const formattedDay = day.padStart(2, '0');
-    
-    return `${year}-${formattedMonth}-${formattedDay}`;
-  }
-  
-  return null; // 如果字符串不匹配，则返回 null
-}
 
 
 export function getDateArrayByRange(start: Date, end: Date): Date[] {
@@ -135,42 +115,11 @@ export function categorizeDataByLevels(data: IDatum[]) {
   }));
 }
 
-export function getStepData(data: never[]): IDatum[] {
-  const result: Record<string, number> = {}
-
-  try {
-    for (const record of data) {
-      if (record['@_type'] === "HKQuantityTypeIdentifierStepCount") {
-        
-        const rawDate = record['@_creationDate']
-        const normalDate = formatYearMonthDay(rawDate) ?? ''
-        const strDate = new Date(normalDate).toLocaleDateString()
-  
-        if (strDate in result) {
-          result[strDate] = result[strDate] + Number(record['@_value'])
-        } else {
-          result[strDate] = Number(record['@_value'])
-        }
-
-      }
-    }
-  } catch (error) {
-    console.log('getStepData error ')
-  }
-
-  return Object.entries(result).reduce((acc, next) =>{
-    return [
-      ...acc,
-      { dt: next[0], value: next[1], level: null, flag: 0 }
-    ]
-  }, [] as IDatum[])
-}
-
 export function getOriginalRecords(text: string): never[] {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
   const jObj = parser.parse(text);
 
-  const result = jObj?.HealthData?.Record ?? null
+  const result = jObj?.HealthData?.Record ?? []
 
   return result
 }
@@ -193,7 +142,7 @@ export function getOriginalRecords(text: string): never[] {
       for (let j = 1; j < daysDifference; j++) {
         const missingDate = new Date(lastDate);
         missingDate.setDate(lastDate.getDate() + j);
-        const formattedDate = `${missingDate.getFullYear()}/${missingDate.getMonth() + 1}/${missingDate.getDate()}`;
+        const formattedDate = format(missingDate, DATE_FORMAT);
 
         // 填充缺失的日期，可以设置默认的 value 和 level
         filledList.splice(i + j - 1, 0, {
@@ -223,8 +172,10 @@ export function isDataContinuousInRange(start: string, end: string, dataList: ID
   const dateSet = new Set(dataList.map(item => item.dt));
 
   for (let currentDate = startDate; currentDate <= endDate; currentDate.setDate(currentDate.getDate() + 1)) {
-    const dateString = `${currentDate.getFullYear()}/${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
+    // const dateString = `${currentDate.getFullYear()}/${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
+    const dateString = format(currentDate, DATE_FORMAT);
     if (!dateSet.has(dateString)) {
+      console.log({ dateSet, dateString })
       return false;
     }
   }
@@ -248,8 +199,10 @@ export function patchDataList(list: IDatum[]) {
   // 连续性检查
   const start = finalList[0].dt
   const end = finalList[finalList.length - 1].dt
-  if (!isDataContinuousInRange(start, end, finalList)) {
-    console.log('存在不连续的日期')
+  if (isDataContinuousInRange(start, end, finalList)) {
+    console.info('连续性检查通过')
+  } else {
+    console.warn('存在不连续的日期 ')
   }
 
   return finalList
